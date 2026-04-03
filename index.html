@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KIS Briefing Bot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="topbar">
+      <div class="brand-mark">
+        <span class="brand-dot"></span>
+        <span class="brand-text">KIS Briefing Bot</span>
+      </div>
+      <span class="topbar-status">Live Server</span>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Korea Market Briefing</p>
+          <h1>AI 종목 브리핑 봇</h1>
+          <p class="hero-text">
+            관심종목을 넣으면 오늘의 강도, 리스크, 관전 포인트를
+            Notion처럼 차분한 화면 안에서 한눈에 읽히는 브리핑으로 정리합니다.
+          </p>
+          <div class="hero-actions">
+            <button id="generate-button" class="primary-button" type="button">오늘 브리핑 생성</button>
+            <button id="sample-button" class="secondary-button" type="button">샘플 종목 불러오기</button>
+          </div>
+        </div>
+
+        <aside class="hero-panel">
+          <p class="card-label">Today</p>
+          <strong id="market-date" class="hero-date">2026-04-03</strong>
+          <p id="market-mood" class="market-mood">한국장 톤을 계산하는 중</p>
+          <div class="hero-badges">
+            <span class="badge">규칙 기반 MVP</span>
+            <span class="badge" id="data-source-badge">데이터 확인 중</span>
+          </div>
+          <p id="last-updated" class="meta-text">마지막 갱신 시각을 불러오는 중입니다.</p>
+          <div class="refresh-controls">
+            <button id="refresh-button" class="secondary-button" type="button">지금 새로고침</button>
+            <label class="toggle-label" for="auto-refresh-toggle">
+              <input id="auto-refresh-toggle" type="checkbox">
+              <span>1분 자동 갱신</span>
+            </label>
+          </div>
+        </aside>
+      </section>
+
+      <section class="control-section">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Input</p>
+            <h2>관심종목 입력</h2>
+          </div>
+          <p class="section-description">종목명이나 종목코드를 쉼표로 구분해서 입력하세요.</p>
+        </div>
+
+        <label class="input-label" for="symbols">Symbols</label>
+        <textarea id="symbols" rows="4" spellcheck="false">삼성전자, SK하이닉스, NAVER, 현대차, LG에너지솔루션</textarea>
+
+        <div class="info-strip">
+          <div class="info-card">
+            <span class="label">모드</span>
+            <strong>서버 앱</strong>
+          </div>
+          <div class="info-card">
+            <span class="label">데이터 상태</span>
+            <strong id="data-source-detail">확인 중</strong>
+          </div>
+          <div class="info-card">
+            <span class="label">마지막 갱신</span>
+            <strong id="data-updated-detail">확인 중</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="summary-grid">
+        <article class="summary-card summary-primary">
+          <p class="card-label">Market Tone</p>
+          <h3 id="summary-tone-title">브리핑 대기 중</h3>
+          <p id="summary-tone-body">관심종목을 입력하면 오늘의 시장 분위기를 한 문단으로 요약합니다.</p>
+        </article>
+
+        <article class="summary-card">
+          <p class="card-label">Top Pick</p>
+          <h3 id="summary-top-name">선택 전</h3>
+          <p id="summary-top-body">가장 강한 구조를 보이는 종목을 자동으로 골라 설명합니다.</p>
+        </article>
+
+        <article class="summary-card">
+          <p class="card-label">Risk Watch</p>
+          <h3 id="summary-risk-name">선택 전</h3>
+          <p id="summary-risk-body">과열, 이탈, 거래 위축 신호가 강한 종목을 따로 잡아줍니다.</p>
+        </article>
+      </section>
+
+      <section class="cards-section">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Output</p>
+            <h2>종목 브리핑</h2>
+          </div>
+          <p id="result-count" class="section-description">0개 종목</p>
+        </div>
+        <div id="briefing-cards" class="briefing-cards"></div>
+      </section>
+    </main>
+  </div>
+
+  <template id="briefing-card-template">
+    <article class="briefing-card">
+      <div class="card-topline">
+        <div>
+          <p class="ticker"></p>
+          <h3 class="name"></h3>
+        </div>
+        <span class="signal-pill"></span>
+      </div>
+      <div class="price-row">
+        <strong class="price"></strong>
+        <span class="change"></span>
+      </div>
+      <div class="metric-grid"></div>
+      <p class="briefing-copy"></p>
+      <ul class="tags"></ul>
+    </article>
+  </template>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
