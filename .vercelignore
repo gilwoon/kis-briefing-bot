@@ -1,13 +1,11 @@
 .env
 .env.local
 .env.*.local
-dist/
-node_modules/
+node_modules
 *.log
 preview*.png
 status-preview*.png
 server-mode-preview.png
 live-preview*.png
 refresh-preview.png
-
-.vercel
+.git
