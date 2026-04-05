@@ -4,6 +4,11 @@
 
 현재 버전은 Node 서버가 정적 파일과 `/api/briefing` API를 함께 제공하며, KIS 키가 있으면 실시간 시세를 조회합니다. 호출 실패 시에는 서비스가 완전히 깨지지 않도록 샘플 데이터로 자동 전환합니다.
 
+배포 주소:
+
+- `https://kis-briefing-bot.vercel.app`
+- 헬스 체크: `https://kis-briefing-bot.vercel.app/health`
+
 ## 포함된 기능
 
 - 관심종목 입력
@@ -48,6 +53,11 @@ Windows에서 바로 실행하려면:
 ```txt
 start-kis-briefing-bot.bat
 ```
+
+## 배포
+
+- Production: `https://kis-briefing-bot.vercel.app`
+- Health: `https://kis-briefing-bot.vercel.app/health`
 
 ## 환경변수
 
