@@ -1,10 +1,11 @@
 import { mockMarketData } from "./data/mock-market-data.js";
-import { searchSymbolEntries } from "./data/symbol-directory.js";
+import { findSymbolEntry, searchSymbolEntries } from "./data/symbol-directory.js";
 
-const symbolsInput = document.querySelector("#symbols");
 const symbolSearchInput = document.querySelector("#symbol-search");
-const addSymbolButton = document.querySelector("#add-symbol-button");
 const symbolSuggestions = document.querySelector("#symbol-suggestions");
+const selectedSymbolsContainer = document.querySelector("#selected-symbols");
+const selectedSymbolsCount = document.querySelector("#selected-symbols-count");
+const clearSelectedSymbolsButton = document.querySelector("#clear-selected-symbols-button");
 const generateButton = document.querySelector("#generate-button");
 const refreshButton = document.querySelector("#refresh-button");
 const autoRefreshToggle = document.querySelector("#auto-refresh-toggle");
@@ -31,31 +32,41 @@ const summaryTopBody = document.querySelector("#summary-top-body");
 const summaryRiskName = document.querySelector("#summary-risk-name");
 const summaryRiskBody = document.querySelector("#summary-risk-body");
 
+const defaultSelectedSymbols = ["005930", "000660", "035420", "005380", "373220"];
 const AUTO_REFRESH_MS = 60_000;
 const WATCHLIST_STORAGE_KEY = "kis-briefing-bot.watchlists";
 const LAST_WATCHLIST_NAME_KEY = "kis-briefing-bot.last-watchlist-name";
+
 let autoRefreshTimer = null;
 let isRendering = false;
 let savedWatchlistItems = loadSavedWatchlists();
 let activeSuggestionSymbol = "";
+let selectedSymbols = [...defaultSelectedSymbols];
 
 marketDate.textContent = new Intl.DateTimeFormat("ko-KR", {
   dateStyle: "long"
 }).format(new Date());
 
+renderSelectedSymbols();
 renderSavedWatchlists();
 restoreLastWatchlistName();
 
 generateButton.addEventListener("click", () => {
-  void renderDashboard(parseSymbolInput(symbolsInput.value));
+  void renderDashboard(selectedSymbols);
 });
 
 refreshButton.addEventListener("click", () => {
-  void renderDashboard(parseSymbolInput(symbolsInput.value));
+  void renderDashboard(selectedSymbols);
 });
 
 saveWatchlistButton.addEventListener("click", () => {
   saveCurrentWatchlist();
+});
+
+clearSelectedSymbolsButton.addEventListener("click", () => {
+  selectedSymbols = [];
+  renderSelectedSymbols();
+  updateWatchlistStatus("선택한 관심종목을 모두 비웠습니다.");
 });
 
 symbolSearchInput.addEventListener("input", () => {
@@ -65,29 +76,18 @@ symbolSearchInput.addEventListener("input", () => {
 symbolSearchInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
     event.preventDefault();
-    addSelectedSymbolToInput();
+    addActiveSuggestion();
   }
-});
-
-addSymbolButton.addEventListener("click", () => {
-  addSelectedSymbolToInput();
 });
 
 autoRefreshToggle.addEventListener("change", () => {
   syncAutoRefresh();
 });
 
-void renderDashboard(parseSymbolInput(symbolsInput.value));
-
-function parseSymbolInput(rawInput) {
-  return rawInput
-    .split(/[\n,;]+/u)
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
+void renderDashboard(selectedSymbols);
 
 function renderSymbolSuggestions(rawKeyword) {
-  const keyword = rawKeyword.trim().toLowerCase();
+  const keyword = rawKeyword.trim();
   symbolSuggestions.innerHTML = "";
   activeSuggestionSymbol = "";
 
@@ -100,7 +100,7 @@ function renderSymbolSuggestions(rawKeyword) {
   if (matches.length === 0) {
     const empty = document.createElement("p");
     empty.className = "symbol-suggestion-empty";
-    empty.textContent = "일치하는 등록 종목이 없습니다. 6자리 종목코드로 직접 입력해 보세요.";
+    empty.textContent = "일치하는 등록 종목이 없습니다. 6자리 종목코드를 직접 입력해 보세요.";
     symbolSuggestions.appendChild(empty);
     return;
   }
@@ -116,15 +116,14 @@ function renderSymbolSuggestions(rawKeyword) {
     }
     button.innerHTML = `<strong>${entry.name}</strong><span>${entry.symbol}</span>`;
     button.addEventListener("click", () => {
-      appendSymbolToInput(entry.symbol);
-      symbolSearchInput.value = "";
-      renderSymbolSuggestions("");
+      addSymbol(entry.symbol);
+      resetSearchUi();
     });
     symbolSuggestions.appendChild(button);
   });
 }
 
-function addSelectedSymbolToInput() {
+function addActiveSuggestion() {
   const keyword = symbolSearchInput.value.trim();
   if (!keyword) {
     return;
@@ -134,30 +133,57 @@ function addSelectedSymbolToInput() {
   const symbolToAdd = activeSuggestionSymbol || directCode;
 
   if (!symbolToAdd) {
-    updateWatchlistStatus("자동완성에 없는 종목명은 6자리 종목코드로 입력해 주세요.");
+    updateWatchlistStatus("검색 결과가 없으면 6자리 종목코드로 입력해 주세요.");
     return;
   }
 
-  appendSymbolToInput(symbolToAdd);
-  symbolSearchInput.value = "";
-  renderSymbolSuggestions("");
+  addSymbol(symbolToAdd);
+  resetSearchUi();
 }
 
-function appendSymbolToInput(symbol) {
-  const currentSymbols = parseSymbolInput(symbolsInput.value);
-
-  if (currentSymbols.includes(symbol)) {
-    updateWatchlistStatus(`${symbol}은 이미 입력되어 있습니다.`);
+function addSymbol(symbol) {
+  if (selectedSymbols.includes(symbol)) {
+    updateWatchlistStatus(`${displayNameForSymbol(symbol)}은 이미 선택되어 있습니다.`);
     return;
   }
 
-  currentSymbols.push(symbol);
-  symbolsInput.value = currentSymbols.join(", ");
-  updateWatchlistStatus(`${symbol}을 관심종목 입력란에 추가했습니다.`);
+  selectedSymbols = [...selectedSymbols, symbol];
+  renderSelectedSymbols();
+  updateWatchlistStatus(`${displayNameForSymbol(symbol)}을 관심종목에 추가했습니다.`);
+}
+
+function removeSymbol(symbol) {
+  selectedSymbols = selectedSymbols.filter((item) => item !== symbol);
+  renderSelectedSymbols();
+  updateWatchlistStatus(`${displayNameForSymbol(symbol)}을 관심종목에서 제거했습니다.`);
+}
+
+function renderSelectedSymbols() {
+  selectedSymbolsContainer.innerHTML = "";
+  selectedSymbolsCount.textContent = `${selectedSymbols.length}개 선택됨`;
+  clearSelectedSymbolsButton.disabled = selectedSymbols.length === 0;
+
+  if (selectedSymbols.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "selected-symbols-empty";
+    empty.textContent = "위 검색창에서 종목을 찾아 추가하면 여기에 선택된 관심종목이 쌓입니다.";
+    selectedSymbolsContainer.appendChild(empty);
+    return;
+  }
+
+  selectedSymbols.forEach((symbol) => {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "selected-symbol-chip";
+    chip.innerHTML = `<strong>${displayNameForSymbol(symbol)}</strong><span>${symbol}</span><em>삭제</em>`;
+    chip.addEventListener("click", () => {
+      removeSymbol(symbol);
+    });
+    selectedSymbolsContainer.appendChild(chip);
+  });
 }
 
 function saveCurrentWatchlist() {
-  const symbols = parseSymbolInput(symbolsInput.value);
   const name = watchlistNameInput.value.trim();
 
   if (!name) {
@@ -166,9 +192,9 @@ function saveCurrentWatchlist() {
     return;
   }
 
-  if (symbols.length === 0) {
-    updateWatchlistStatus("저장할 종목이 없습니다. 종목을 먼저 입력해 주세요.");
-    symbolsInput.focus();
+  if (selectedSymbols.length === 0) {
+    updateWatchlistStatus("저장할 관심종목이 없습니다. 종목을 먼저 추가해 주세요.");
+    symbolSearchInput.focus();
     return;
   }
 
@@ -176,7 +202,7 @@ function saveCurrentWatchlist() {
   const existingIndex = savedWatchlistItems.findIndex((item) => item.name === name);
   const payload = {
     name,
-    symbols,
+    symbols: [...selectedSymbols],
     updatedAt: now
   };
 
@@ -193,7 +219,7 @@ function saveCurrentWatchlist() {
   persistWatchlists();
   localStorage.setItem(LAST_WATCHLIST_NAME_KEY, name);
   renderSavedWatchlists();
-  updateWatchlistStatus(`"${name}"에 ${symbols.length}개 종목을 저장했습니다.`);
+  updateWatchlistStatus(`"${name}"에 ${selectedSymbols.length}개 종목을 저장했습니다.`);
 }
 
 function loadSavedWatchlists() {
@@ -248,7 +274,7 @@ function renderSavedWatchlists() {
     count.textContent = `${item.symbols.length}개 종목`;
 
     const description = document.createElement("p");
-    description.textContent = item.symbols.join(", ");
+    description.textContent = item.symbols.map((symbol) => displayNameForSymbol(symbol)).join(", ");
 
     meta.append(title, count, description);
 
@@ -260,11 +286,12 @@ function renderSavedWatchlists() {
     loadButton.className = "secondary-button";
     loadButton.textContent = "불러오기";
     loadButton.addEventListener("click", () => {
-      symbolsInput.value = item.symbols.join(", ");
+      selectedSymbols = [...item.symbols];
       watchlistNameInput.value = item.name;
       localStorage.setItem(LAST_WATCHLIST_NAME_KEY, item.name);
+      renderSelectedSymbols();
       updateWatchlistStatus(`"${item.name}"을 불러왔습니다.`);
-      void renderDashboard(item.symbols);
+      void renderDashboard(selectedSymbols);
     });
 
     const deleteButton = document.createElement("button");
@@ -321,7 +348,7 @@ async function renderDashboard(requestedSymbols) {
     resultCount.textContent = `${briefings.length}개 종목`;
 
     if (briefings.length === 0) {
-      showEmptyState("입력한 종목을 찾지 못했습니다", "등록된 종목명 별칭 또는 6자리 종목코드를 입력해 주세요.");
+      showEmptyState("선택한 종목이 없습니다", "위 검색창에서 종목을 추가한 뒤 브리핑을 생성해 주세요.");
       return;
     }
 
@@ -386,7 +413,7 @@ function mapRequestedSymbols(requestedSymbols) {
   const seen = new Set();
 
   return requestedSymbols.reduce((accumulator, keyword) => {
-    const normalizedKeyword = keyword.toLowerCase();
+    const normalizedKeyword = String(keyword).toLowerCase();
     const stock = mockMarketData.find((item) =>
       item.aliases.some((alias) => alias.toLowerCase() === normalizedKeyword)
     );
@@ -591,8 +618,8 @@ function showEmptyState(title, description) {
 }
 
 function setLoadingState(isLoading) {
-  generateButton.disabled = isLoading;
-  refreshButton.disabled = isLoading;
+  generateButton.disabled = isLoading || selectedSymbols.length === 0;
+  refreshButton.disabled = isLoading || selectedSymbols.length === 0;
   generateButton.textContent = isLoading ? "브리핑 생성 중..." : "오늘 브리핑 생성";
   refreshButton.textContent = isLoading ? "새로고침 중..." : "지금 새로고침";
 }
@@ -601,21 +628,22 @@ function applySymbolFeedback(response, requestedSymbols) {
   const unknownSymbols = Array.isArray(response.unknownSymbols) ? response.unknownSymbols : [];
 
   if (requestedSymbols.length === 0) {
-    symbolFeedback.hidden = true;
-    symbolFeedback.textContent = "";
+    symbolFeedback.hidden = false;
+    symbolFeedback.classList.remove("symbol-feedback-warning");
+    symbolFeedback.textContent = "종목 검색에서 원하는 종목을 선택하면 여기에 선택 상태가 반영됩니다.";
     return;
   }
 
   if (unknownSymbols.length === 0) {
     symbolFeedback.hidden = false;
     symbolFeedback.classList.remove("symbol-feedback-warning");
-    symbolFeedback.textContent = `${requestedSymbols.length}개 입력값을 인식했습니다. 종목명은 등록된 별칭만 지원하고, 그 외에는 6자리 종목코드 입력이 가장 확실합니다.`;
+    symbolFeedback.textContent = `${requestedSymbols.length}개 관심종목이 선택되어 있습니다. 칩을 눌러 제거하거나 검색으로 더 추가할 수 있습니다.`;
     return;
   }
 
   symbolFeedback.hidden = false;
   symbolFeedback.classList.add("symbol-feedback-warning");
-  symbolFeedback.textContent = `인식하지 못한 종목: ${unknownSymbols.join(", ")}. 종목명 대신 6자리 종목코드를 입력해 보세요.`;
+  symbolFeedback.textContent = `인식하지 못한 종목: ${unknownSymbols.join(", ")}. 저장 목록이 오래됐다면 다시 선택해 주세요.`;
 }
 
 function applyDataStatus(response) {
@@ -664,11 +692,11 @@ function syncAutoRefresh() {
   }
 
   autoRefreshTimer = setInterval(() => {
-    if (document.visibilityState !== "visible" || isRendering) {
+    if (document.visibilityState !== "visible" || isRendering || selectedSymbols.length === 0) {
       return;
     }
 
-    void renderDashboard(parseSymbolInput(symbolsInput.value));
+    void renderDashboard(selectedSymbols);
   }, AUTO_REFRESH_MS);
 }
 
@@ -678,4 +706,14 @@ function formatPrice(price) {
     currency: "KRW",
     maximumFractionDigits: 0
   }).format(price);
+}
+
+function displayNameForSymbol(symbol) {
+  return findSymbolEntry(symbol)?.name || symbol;
+}
+
+function resetSearchUi() {
+  symbolSearchInput.value = "";
+  symbolSuggestions.innerHTML = "";
+  activeSuggestionSymbol = "";
 }

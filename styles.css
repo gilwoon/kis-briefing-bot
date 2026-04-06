@@ -39,7 +39,6 @@ body {
 }
 
 button,
-textarea,
 input {
   font: inherit;
 }
@@ -273,24 +272,6 @@ input {
   color: var(--text-secondary);
 }
 
-textarea {
-  width: 100%;
-  min-height: 124px;
-  resize: vertical;
-  border: 1px solid #dddddd;
-  border-radius: 4px;
-  padding: 14px 16px;
-  background: #ffffff;
-  color: rgba(0, 0, 0, 0.9);
-  line-height: 1.5;
-}
-
-textarea:focus {
-  outline: 2px solid #097fe8;
-  outline-offset: 0;
-  border-color: #097fe8;
-}
-
 .symbol-feedback {
   margin: 10px 0 0;
   color: var(--text-secondary);
@@ -307,10 +288,7 @@ textarea:focus {
 }
 
 .symbol-picker-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 12px;
-  align-items: center;
+  display: block;
 }
 
 .symbol-suggestions {
@@ -363,6 +341,99 @@ textarea:focus {
 .symbol-suggestion-empty {
   margin: 0;
   padding: 12px 14px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.selected-symbols-panel {
+  margin-top: 18px;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: #ffffff;
+}
+
+.selected-symbols-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.selected-symbols-heading h3 {
+  margin: 8px 0 0;
+  font-size: 22px;
+  line-height: 1.27;
+  letter-spacing: -0.25px;
+  font-weight: 700;
+}
+
+.selected-symbols-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.selected-symbols-count {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.43;
+}
+
+.selected-symbols {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.selected-symbol-chip,
+.selected-symbols-empty {
+  border-radius: 9999px;
+  border: 1px solid var(--border);
+  background: var(--bg-alt);
+}
+
+.selected-symbol-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.selected-symbol-chip strong,
+.selected-symbol-chip span,
+.selected-symbol-chip em {
+  display: block;
+}
+
+.selected-symbol-chip strong {
+  font-size: 14px;
+  line-height: 1.43;
+  font-style: normal;
+}
+
+.selected-symbol-chip span,
+.selected-symbol-chip em {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.33;
+  letter-spacing: 0.125px;
+  text-transform: uppercase;
+  font-style: normal;
+}
+
+.selected-symbol-chip:hover {
+  border-color: rgba(0, 117, 222, 0.24);
+  background: var(--accent-soft);
+}
+
+.selected-symbols-empty {
+  margin: 0;
+  padding: 14px 16px;
   color: var(--text-secondary);
   font-size: 14px;
   line-height: 1.5;
@@ -739,6 +810,7 @@ textarea:focus {
 
   .topbar,
   .section-heading,
+  .selected-symbols-heading,
   .watchlist-heading,
   .hero-actions,
   .refresh-controls {
@@ -755,11 +827,15 @@ textarea:focus {
   }
 
   .info-strip,
-  .symbol-picker-row,
   .saved-watchlists,
   .watchlist-actions,
   .metric-grid {
     grid-template-columns: 1fr;
+  }
+
+  .selected-symbols-actions {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .saved-watchlist-card {

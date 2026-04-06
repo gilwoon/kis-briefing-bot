@@ -56,21 +56,33 @@
         <div class="section-heading">
           <div>
             <p class="eyebrow">Input</p>
-            <h2>관심종목 입력</h2>
+            <h2>관심종목 선택</h2>
           </div>
-          <p class="section-description">등록된 종목명 별칭 또는 6자리 종목코드를 쉼표나 줄바꿈으로 구분해서 입력하세요.</p>
+          <p class="section-description">종목을 검색해서 선택하면 아래 목록에 바로 추가됩니다.</p>
         </div>
 
-        <label class="input-label" for="symbols">Symbols</label>
         <div class="symbol-picker">
           <label class="input-label" for="symbol-search">종목 검색</label>
           <div class="symbol-picker-row">
             <input id="symbol-search" class="watchlist-name-input" type="text" autocomplete="off" placeholder="종목명 또는 6자리 종목코드 검색">
-            <button id="add-symbol-button" class="secondary-button" type="button">입력란에 추가</button>
           </div>
           <div id="symbol-suggestions" class="symbol-suggestions" aria-live="polite"></div>
         </div>
-        <textarea id="symbols" rows="4" spellcheck="false">삼성전자, SK하이닉스, NAVER, 현대차, LG에너지솔루션</textarea>
+
+        <div class="selected-symbols-panel">
+          <div class="selected-symbols-heading">
+            <div>
+              <p class="eyebrow">Selected</p>
+              <h3>선택된 관심종목</h3>
+            </div>
+            <div class="selected-symbols-actions">
+              <span id="selected-symbols-count" class="selected-symbols-count">0개 선택됨</span>
+              <button id="clear-selected-symbols-button" class="secondary-button" type="button">전체 비우기</button>
+            </div>
+          </div>
+          <div id="selected-symbols" class="selected-symbols" aria-live="polite"></div>
+        </div>
+
         <p id="symbol-feedback" class="symbol-feedback" hidden></p>
 
         <div class="watchlist-panel">
