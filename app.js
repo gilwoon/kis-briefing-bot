@@ -6,7 +6,6 @@ const symbolSearchInput = document.querySelector("#symbol-search");
 const addSymbolButton = document.querySelector("#add-symbol-button");
 const symbolSuggestions = document.querySelector("#symbol-suggestions");
 const generateButton = document.querySelector("#generate-button");
-const sampleButton = document.querySelector("#sample-button");
 const refreshButton = document.querySelector("#refresh-button");
 const autoRefreshToggle = document.querySelector("#auto-refresh-toggle");
 const watchlistNameInput = document.querySelector("#watchlist-name");
@@ -32,7 +31,6 @@ const summaryTopBody = document.querySelector("#summary-top-body");
 const summaryRiskName = document.querySelector("#summary-risk-name");
 const summaryRiskBody = document.querySelector("#summary-risk-body");
 
-const defaultSymbols = ["삼성전자", "SK하이닉스", "NAVER", "현대차", "LG에너지솔루션"];
 const AUTO_REFRESH_MS = 60_000;
 const WATCHLIST_STORAGE_KEY = "kis-briefing-bot.watchlists";
 const LAST_WATCHLIST_NAME_KEY = "kis-briefing-bot.last-watchlist-name";
@@ -50,11 +48,6 @@ restoreLastWatchlistName();
 
 generateButton.addEventListener("click", () => {
   void renderDashboard(parseSymbolInput(symbolsInput.value));
-});
-
-sampleButton.addEventListener("click", () => {
-  symbolsInput.value = defaultSymbols.join(", ");
-  void renderDashboard(defaultSymbols);
 });
 
 refreshButton.addEventListener("click", () => {
@@ -84,7 +77,7 @@ autoRefreshToggle.addEventListener("change", () => {
   syncAutoRefresh();
 });
 
-void renderDashboard(defaultSymbols);
+void renderDashboard(parseSymbolInput(symbolsInput.value));
 
 function parseSymbolInput(rawInput) {
   return rawInput
@@ -334,7 +327,7 @@ async function renderDashboard(requestedSymbols) {
     resultCount.textContent = `${briefings.length}개 종목`;
 
     if (briefings.length === 0) {
-      showEmptyState("입력한 종목을 찾지 못했습니다", "샘플 데이터에 등록된 종목명 또는 종목코드를 입력해 주세요.");
+      showEmptyState("입력한 종목을 찾지 못했습니다", "등록된 종목명 별칭 또는 6자리 종목코드를 입력해 주세요.");
       return;
     }
 
@@ -345,7 +338,7 @@ async function renderDashboard(requestedSymbols) {
     summaryToneBody.textContent =
       response.source === "kis-live"
         ? `${summary.toneBody} 실시간 KIS 시세 기준으로 계산했습니다.`
-        : `${summary.toneBody} ${response.message || "현재는 샘플 데이터로 브리핑 중입니다."}`;
+        : `${summary.toneBody} ${response.message || "현재는 복구 모드 데이터로 브리핑 중입니다."}`;
     summaryTopName.textContent = summary.topPick.name;
     summaryTopBody.textContent = summary.topPick.briefing;
     summaryRiskName.textContent = summary.riskPick.name;
@@ -388,7 +381,7 @@ async function fetchBriefings(symbols) {
     const fallbackItems = mapRequestedSymbols(symbols);
     return {
       source: "mock-fallback",
-      message: "KIS 서버 응답을 받지 못해 샘플 데이터로 전환했습니다.",
+      message: "KIS 서버 응답을 받지 못해 복구 모드 데이터로 전환했습니다.",
       updatedAt: new Date().toISOString(),
       items: fallbackItems
     };
