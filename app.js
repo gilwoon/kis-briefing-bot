@@ -5,6 +5,10 @@ const generateButton = document.querySelector("#generate-button");
 const sampleButton = document.querySelector("#sample-button");
 const refreshButton = document.querySelector("#refresh-button");
 const autoRefreshToggle = document.querySelector("#auto-refresh-toggle");
+const watchlistNameInput = document.querySelector("#watchlist-name");
+const saveWatchlistButton = document.querySelector("#save-watchlist-button");
+const savedWatchlists = document.querySelector("#saved-watchlists");
+const watchlistStatus = document.querySelector("#watchlist-status");
 const cardsContainer = document.querySelector("#briefing-cards");
 const cardTemplate = document.querySelector("#briefing-card-template");
 
@@ -25,12 +29,18 @@ const summaryRiskBody = document.querySelector("#summary-risk-body");
 
 const defaultSymbols = ["삼성전자", "SK하이닉스", "NAVER", "현대차", "LG에너지솔루션"];
 const AUTO_REFRESH_MS = 60_000;
+const WATCHLIST_STORAGE_KEY = "kis-briefing-bot.watchlists";
+const LAST_WATCHLIST_NAME_KEY = "kis-briefing-bot.last-watchlist-name";
 let autoRefreshTimer = null;
 let isRendering = false;
+let savedWatchlistItems = loadSavedWatchlists();
 
 marketDate.textContent = new Intl.DateTimeFormat("ko-KR", {
   dateStyle: "long"
 }).format(new Date());
+
+renderSavedWatchlists();
+restoreLastWatchlistName();
 
 generateButton.addEventListener("click", () => {
   void renderDashboard(parseSymbolInput(symbolsInput.value));
@@ -45,6 +55,10 @@ refreshButton.addEventListener("click", () => {
   void renderDashboard(parseSymbolInput(symbolsInput.value));
 });
 
+saveWatchlistButton.addEventListener("click", () => {
+  saveCurrentWatchlist();
+});
+
 autoRefreshToggle.addEventListener("change", () => {
   syncAutoRefresh();
 });
@@ -56,6 +70,154 @@ function parseSymbolInput(rawInput) {
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function saveCurrentWatchlist() {
+  const symbols = parseSymbolInput(symbolsInput.value);
+  const name = watchlistNameInput.value.trim();
+
+  if (!name) {
+    updateWatchlistStatus("저장 이름을 먼저 입력해 주세요.");
+    watchlistNameInput.focus();
+    return;
+  }
+
+  if (symbols.length === 0) {
+    updateWatchlistStatus("저장할 종목이 없습니다. 종목을 먼저 입력해 주세요.");
+    symbolsInput.focus();
+    return;
+  }
+
+  const now = new Date().toISOString();
+  const existingIndex = savedWatchlistItems.findIndex((item) => item.name === name);
+  const payload = {
+    name,
+    symbols,
+    updatedAt: now
+  };
+
+  if (existingIndex >= 0) {
+    savedWatchlistItems[existingIndex] = payload;
+  } else {
+    savedWatchlistItems.unshift(payload);
+  }
+
+  savedWatchlistItems = savedWatchlistItems
+    .sort((left, right) => new Date(right.updatedAt) - new Date(left.updatedAt))
+    .slice(0, 8);
+
+  persistWatchlists();
+  localStorage.setItem(LAST_WATCHLIST_NAME_KEY, name);
+  renderSavedWatchlists();
+  updateWatchlistStatus(`"${name}"에 ${symbols.length}개 종목을 저장했습니다.`);
+}
+
+function loadSavedWatchlists() {
+  try {
+    const raw = localStorage.getItem(WATCHLIST_STORAGE_KEY);
+    if (!raw) {
+      return [];
+    }
+
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed.filter((item) =>
+      item &&
+      typeof item.name === "string" &&
+      Array.isArray(item.symbols) &&
+      typeof item.updatedAt === "string"
+    );
+  } catch (error) {
+    return [];
+  }
+}
+
+function persistWatchlists() {
+  localStorage.setItem(WATCHLIST_STORAGE_KEY, JSON.stringify(savedWatchlistItems));
+}
+
+function renderSavedWatchlists() {
+  savedWatchlists.innerHTML = "";
+
+  if (savedWatchlistItems.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "saved-watchlists-empty";
+    empty.textContent = "아직 저장된 관심종목 묶음이 없습니다.";
+    savedWatchlists.appendChild(empty);
+    return;
+  }
+
+  savedWatchlistItems.forEach((item) => {
+    const card = document.createElement("article");
+    card.className = "saved-watchlist-card";
+
+    const meta = document.createElement("div");
+    meta.className = "saved-watchlist-meta";
+
+    const title = document.createElement("strong");
+    title.textContent = item.name;
+
+    const count = document.createElement("span");
+    count.textContent = `${item.symbols.length}개 종목`;
+
+    const description = document.createElement("p");
+    description.textContent = item.symbols.join(", ");
+
+    meta.append(title, count, description);
+
+    const actions = document.createElement("div");
+    actions.className = "saved-watchlist-actions";
+
+    const loadButton = document.createElement("button");
+    loadButton.type = "button";
+    loadButton.className = "secondary-button";
+    loadButton.textContent = "불러오기";
+    loadButton.addEventListener("click", () => {
+      symbolsInput.value = item.symbols.join(", ");
+      watchlistNameInput.value = item.name;
+      localStorage.setItem(LAST_WATCHLIST_NAME_KEY, item.name);
+      updateWatchlistStatus(`"${item.name}"을 불러왔습니다.`);
+      void renderDashboard(item.symbols);
+    });
+
+    const deleteButton = document.createElement("button");
+    deleteButton.type = "button";
+    deleteButton.className = "secondary-button danger-button";
+    deleteButton.textContent = "삭제";
+    deleteButton.addEventListener("click", () => {
+      deleteWatchlist(item.name);
+    });
+
+    actions.append(loadButton, deleteButton);
+    card.append(meta, actions);
+    savedWatchlists.appendChild(card);
+  });
+}
+
+function deleteWatchlist(name) {
+  savedWatchlistItems = savedWatchlistItems.filter((item) => item.name !== name);
+  persistWatchlists();
+
+  if (localStorage.getItem(LAST_WATCHLIST_NAME_KEY) === name) {
+    localStorage.removeItem(LAST_WATCHLIST_NAME_KEY);
+  }
+
+  renderSavedWatchlists();
+  updateWatchlistStatus(`"${name}" 저장 목록을 삭제했습니다.`);
+}
+
+function restoreLastWatchlistName() {
+  const lastName = localStorage.getItem(LAST_WATCHLIST_NAME_KEY);
+  if (lastName) {
+    watchlistNameInput.value = lastName;
+  }
+}
+
+function updateWatchlistStatus(message) {
+  watchlistStatus.textContent = message;
 }
 
 async function renderDashboard(requestedSymbols) {
