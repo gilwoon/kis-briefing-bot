@@ -1,5 +1,5 @@
 import { mockMarketData } from "./data/mock-market-data.js";
-import { symbolDirectory } from "./data/symbol-directory.js";
+import { searchSymbolEntries } from "./data/symbol-directory.js";
 
 const symbolsInput = document.querySelector("#symbols");
 const symbolSearchInput = document.querySelector("#symbol-search");
@@ -95,13 +95,7 @@ function renderSymbolSuggestions(rawKeyword) {
     return;
   }
 
-  const matches = symbolDirectory
-    .filter((entry) =>
-      entry.symbol.includes(keyword) ||
-      entry.name.toLowerCase().includes(keyword) ||
-      entry.aliases.some((alias) => alias.toLowerCase().includes(keyword))
-    )
-    .slice(0, 6);
+  const matches = searchSymbolEntries(keyword, 6);
 
   if (matches.length === 0) {
     const empty = document.createElement("p");

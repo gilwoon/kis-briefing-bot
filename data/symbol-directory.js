@@ -14,18 +14,37 @@ export const symbolDirectory = [
   { symbol: "034020", aliases: ["두산에너빌리티", "doosan", "034020"], name: "두산에너빌리티" },
   { symbol: "011200", aliases: ["HMM", "hmm", "011200"], name: "HMM" },
   { symbol: "329180", aliases: ["HD현대중공업", "현대중공업", "329180"], name: "HD현대중공업" },
-  { symbol: "042700", aliases: ["한미반도체", "hanmi semiconductor", "042700"], name: "한미반도체" }
+  { symbol: "042700", aliases: ["한미반도체", "hanmi semiconductor", "042700"], name: "한미반도체" },
+  { symbol: "012450", aliases: ["한화에어로스페이스", "한화에어로", "hanwha aerospace", "012450"], name: "한화에어로스페이스" },
+  { symbol: "000270", aliases: ["기아", "kia", "000270"], name: "기아" },
+  { symbol: "005490", aliases: ["POSCO홀딩스", "포스코홀딩스", "posco holdings", "005490"], name: "POSCO홀딩스" },
+  { symbol: "028260", aliases: ["삼성물산", "samsung c&t", "028260"], name: "삼성물산" },
+  { symbol: "055550", aliases: ["신한지주", "shinhan", "055550"], name: "신한지주" },
+  { symbol: "259960", aliases: ["크래프톤", "krafton", "259960"], name: "크래프톤" },
+  { symbol: "247540", aliases: ["에코프로비엠", "ecopro bm", "247540"], name: "에코프로비엠" },
+  { symbol: "086520", aliases: ["에코프로", "ecopro", "086520"], name: "에코프로" },
+  { symbol: "196170", aliases: ["알테오젠", "alteogen", "196170"], name: "알테오젠" },
+  { symbol: "042660", aliases: ["한화오션", "hanwha ocean", "042660"], name: "한화오션" }
 ];
 
 export function findSymbolEntry(keyword) {
-  const normalizedKeyword = String(keyword).trim().toLowerCase();
+  const normalizedKeyword = normalizeKeyword(keyword);
 
-  const existingEntry = symbolDirectory.find((entry) =>
-    entry.aliases.some((alias) => alias.toLowerCase() === normalizedKeyword)
+  if (!normalizedKeyword) {
+    return null;
+  }
+
+  const exactMatch = symbolDirectory.find((entry) =>
+    getSearchTerms(entry).some((term) => term === normalizedKeyword)
   );
 
-  if (existingEntry) {
-    return existingEntry;
+  if (exactMatch) {
+    return exactMatch;
+  }
+
+  const [bestMatch] = searchSymbolEntries(keyword, 1);
+  if (bestMatch?.score >= 70) {
+    return bestMatch;
   }
 
   if (/^\d{6}$/.test(normalizedKeyword)) {
@@ -37,4 +56,89 @@ export function findSymbolEntry(keyword) {
   }
 
   return null;
+}
+
+export function searchSymbolEntries(keyword, limit = 6) {
+  const normalizedKeyword = normalizeKeyword(keyword);
+
+  if (!normalizedKeyword) {
+    return [];
+  }
+
+  return symbolDirectory
+    .map((entry) => ({
+      ...entry,
+      score: scoreEntry(entry, normalizedKeyword)
+    }))
+    .filter((entry) => entry.score > 0)
+    .sort((left, right) => right.score - left.score || left.name.localeCompare(right.name, "ko"))
+    .slice(0, limit);
+}
+
+function scoreEntry(entry, normalizedKeyword) {
+  const terms = getSearchTerms(entry);
+
+  if (terms.includes(normalizedKeyword)) {
+    return 120;
+  }
+
+  if (entry.symbol.startsWith(normalizedKeyword)) {
+    return 110;
+  }
+
+  const normalizedName = normalizeKeyword(entry.name);
+  if (normalizedName.startsWith(normalizedKeyword)) {
+    return 105;
+  }
+
+  const aliasStartsWith = entry.aliases.some((alias) => normalizeKeyword(alias).startsWith(normalizedKeyword));
+  if (aliasStartsWith) {
+    return 95;
+  }
+
+  if (normalizedName.includes(normalizedKeyword)) {
+    return 88;
+  }
+
+  const aliasContains = entry.aliases.some((alias) => normalizeKeyword(alias).includes(normalizedKeyword));
+  if (aliasContains) {
+    return 76;
+  }
+
+  if (isSubsequence(normalizedKeyword, normalizedName)) {
+    return 72;
+  }
+
+  return 0;
+}
+
+function getSearchTerms(entry) {
+  return [
+    normalizeKeyword(entry.symbol),
+    normalizeKeyword(entry.name),
+    ...entry.aliases.map((alias) => normalizeKeyword(alias))
+  ].filter(Boolean);
+}
+
+function normalizeKeyword(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/gu, "")
+    .replace(/[^\p{L}\p{N}]/gu, "");
+}
+
+function isSubsequence(keyword, target) {
+  let index = 0;
+
+  for (const char of target) {
+    if (char === keyword[index]) {
+      index += 1;
+      if (index === keyword.length) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
