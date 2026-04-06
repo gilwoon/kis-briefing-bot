@@ -63,6 +63,14 @@
         </div>
 
         <label class="input-label" for="symbols">Symbols</label>
+        <div class="symbol-picker">
+          <label class="input-label" for="symbol-search">종목 검색</label>
+          <div class="symbol-picker-row">
+            <input id="symbol-search" class="watchlist-name-input" type="text" autocomplete="off" placeholder="종목명 또는 6자리 종목코드 검색">
+            <button id="add-symbol-button" class="secondary-button" type="button">입력란에 추가</button>
+          </div>
+          <div id="symbol-suggestions" class="symbol-suggestions" aria-live="polite"></div>
+        </div>
         <textarea id="symbols" rows="4" spellcheck="false">삼성전자, SK하이닉스, NAVER, 현대차, LG에너지솔루션</textarea>
         <p id="symbol-feedback" class="symbol-feedback" hidden></p>
 

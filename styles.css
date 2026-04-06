@@ -302,6 +302,72 @@ textarea:focus {
   color: var(--warning);
 }
 
+.symbol-picker {
+  margin-bottom: 12px;
+}
+
+.symbol-picker-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.symbol-suggestions {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.symbol-suggestion,
+.symbol-suggestion-empty {
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #ffffff;
+}
+
+.symbol-suggestion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.symbol-suggestion strong,
+.symbol-suggestion span {
+  display: block;
+}
+
+.symbol-suggestion strong {
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.symbol-suggestion span {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.symbol-suggestion-active,
+.symbol-suggestion:hover {
+  border-color: rgba(0, 117, 222, 0.24);
+  background: var(--accent-soft);
+}
+
+.symbol-suggestion-empty {
+  margin: 0;
+  padding: 12px 14px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 .watchlist-panel {
   margin-top: 18px;
   padding: 20px;
@@ -689,6 +755,7 @@ textarea:focus {
   }
 
   .info-strip,
+  .symbol-picker-row,
   .saved-watchlists,
   .watchlist-actions,
   .metric-grid {
