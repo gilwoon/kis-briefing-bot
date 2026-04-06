@@ -9,6 +9,7 @@ const watchlistNameInput = document.querySelector("#watchlist-name");
 const saveWatchlistButton = document.querySelector("#save-watchlist-button");
 const savedWatchlists = document.querySelector("#saved-watchlists");
 const watchlistStatus = document.querySelector("#watchlist-status");
+const symbolFeedback = document.querySelector("#symbol-feedback");
 const cardsContainer = document.querySelector("#briefing-cards");
 const cardTemplate = document.querySelector("#briefing-card-template");
 
@@ -67,7 +68,7 @@ void renderDashboard(defaultSymbols);
 
 function parseSymbolInput(rawInput) {
   return rawInput
-    .split(",")
+    .split(/[\n,;]+/u)
     .map((item) => item.trim())
     .filter(Boolean);
 }
@@ -231,6 +232,7 @@ async function renderDashboard(requestedSymbols) {
   try {
     const response = await fetchBriefings(requestedSymbols);
     const briefings = response.items.map(buildBriefing);
+    applySymbolFeedback(response, requestedSymbols);
 
     cardsContainer.innerHTML = "";
     resultCount.textContent = `${briefings.length}개 종목`;
@@ -259,6 +261,7 @@ async function renderDashboard(requestedSymbols) {
   } catch (error) {
     cardsContainer.innerHTML = "";
     resultCount.textContent = "0개 종목";
+    applySymbolFeedback({ unknownSymbols: [] }, requestedSymbols);
     applyDataStatus({
       source: "error",
       updatedAt: new Date().toISOString()
@@ -509,6 +512,27 @@ function setLoadingState(isLoading) {
   refreshButton.disabled = isLoading;
   generateButton.textContent = isLoading ? "브리핑 생성 중..." : "오늘 브리핑 생성";
   refreshButton.textContent = isLoading ? "새로고침 중..." : "지금 새로고침";
+}
+
+function applySymbolFeedback(response, requestedSymbols) {
+  const unknownSymbols = Array.isArray(response.unknownSymbols) ? response.unknownSymbols : [];
+
+  if (requestedSymbols.length === 0) {
+    symbolFeedback.hidden = true;
+    symbolFeedback.textContent = "";
+    return;
+  }
+
+  if (unknownSymbols.length === 0) {
+    symbolFeedback.hidden = false;
+    symbolFeedback.classList.remove("symbol-feedback-warning");
+    symbolFeedback.textContent = `${requestedSymbols.length}개 입력값을 인식했습니다. 종목명은 등록된 별칭만 지원하고, 그 외에는 6자리 종목코드 입력이 가장 확실합니다.`;
+    return;
+  }
+
+  symbolFeedback.hidden = false;
+  symbolFeedback.classList.add("symbol-feedback-warning");
+  symbolFeedback.textContent = `인식하지 못한 종목: ${unknownSymbols.join(", ")}. 종목명 대신 6자리 종목코드를 입력해 보세요.`;
 }
 
 function applyDataStatus(response) {

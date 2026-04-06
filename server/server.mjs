@@ -276,7 +276,7 @@ function buildLiveMetrics(entry, quotePayload, historyPayload) {
   return {
     symbol: entry.symbol,
     aliases: entry.aliases,
-    name: entry.name,
+    name: quote.hts_kor_isnm || entry.name,
     price,
     changePercent,
     volumeRatio: round(volumeRatio),
